@@ -11,12 +11,11 @@ def trade_spider():
     url = "https://www.linkedin.com/jobs/search/"
     source = requests.get(url)
     soup = BeautifulSoup(source.text, "html.parser")
-    for links in soup.findAll('div', {'class': 'result-card__contents job-result-card__contents'}):
-        print(str(links))
+    for links in soup.findAll('a', {'class': 'result-card__full-card-link'}):
         sub_url = process(str(links))
-        print(sub_url)
-        print('---\n\n')
-        # jobs.append(get_item(sub_url))
+        # print(sub_url)
+        # print('---\n\n')
+        jobs.append(get_item(sub_url))
         count_company += 1
 
     jobs_array["jobs"] = jobs
@@ -27,89 +26,41 @@ def trade_spider():
 def get_item(item_url):
     source = requests.get(item_url)
     soup = BeautifulSoup(source.text, "html.parser")
-    info = soup.findAll('div', {'class', 'displayFieldBlock'})  # Array info
+
+    # Get general description
+    description = get_description(soup)
+    title = get_title(soup)
+    # print(info_content)
+
     job_item = {}
-    job_item["Tiêu đề"] = title_process(
-        str(soup.find('div', {'class': 'listingInfo'})))
-    job_item["Tên công ty"] = company_process(
-        str(soup.find('div', {'class': 'comp-profile-content'})))
-    mota = info[len(info)-3]
-    job_item["mô tả"] = str(motaa(mota)).replace("[", "").replace("]", "")
-    job_item["yêu cầu"] = str(yeucau(
-        info[len(info)-2])).replace("[", "").replace("]", "").replace("\\xa0", "")
-    job_item["quyền lợi"] = str(
-        quyenloi(info[len(info)-1])).replace("[", "").replace("]", "")
-    job_item["số lượng"] = "1"
-    for i in info[0:len(info) - 3]:
-        data_array = data_process(str(i))
-        for i in range(len(data_array)):
-            job_item[data_array[0]] = str(
-                data_array[1]).replace("[", "").replace("]", "")
-    tem = filter_data(job_item)
-    return tem
+
+    job_item["Description: "] = description
+
+    return job_item
 
 
-def motaa(mota_file):
-    value = []
-    x = mota_file.findAll('li')
-    for i in x:
-        value.append("-"+i.text)
-    y = mota_file.findAll('p')
-    for i in y:
-        value.append(i.text)
-    if x == []:
-        if y == []:
-            mota_file = str(mota_file)
-            a = len(mota_file)
-            mota_file = str(mota_file[84:a])
-            while (mota_file.find("<br/>") != -1):
-                temp = mota_file.find("<br/>")
-                value.append("-"+mota_file[0:temp])
-                mota_file = mota_file[temp+4]
-
-    return value
+def replace_all(text, dic, replace_char):
+    for i in dic:
+        text = text.replace(i, replace_char)
+    return text
 
 
-def yeucau(mota_file):
-    value = []
-    x = mota_file.findAll('li')
-    for i in x:
-        value.append("-"+i.text)
-    y = mota_file.findAll('p')
-    for i in y:
-        value.append(i.text)
-    if x == []:
-        if y == []:
-            mota_file = str(mota_file)
-            a = len(mota_file)
-            mota_file = str(mota_file[85:a])
-            while (mota_file.find("<br/>") != -1):
-                temp = mota_file.find("<br/>")
-                value.append("-"+mota_file[0:temp])
-                mota_file = mota_file[temp+4]
-
-    return value
+def get_title(soup):
+    info = soup.find('h1', {'class', 'topcard__title'})
+    info_content = str(info)
+    return info_content
 
 
-def quyenloi(mota_file):
-    value = []
-    x = mota_file.findAll('li')
-    for i in x:
-        value.append("-"+i.text)
-    y = mota_file.findAll('p')
-    for i in y:
-        value.append(i.text)
-    if x == []:
-        if y == []:
-            mota_file = str(mota_file)
-            a = len(mota_file)
-            mota_file = str(mota_file[78:a])
-            while (mota_file.find("<br/>") != -1):
-                temp = mota_file.find("<br/>")
-                value.append("-"+mota_file[0:temp])
-                mota_file = mota_file[temp+4]
+def get_description(soup):
+    info = soup.find(
+        'div', {'class', 'show-more-less-html__markup'})  # Array info
+    info_content = str(info)[84:]
+    newline = ['<ul><li>', '<li>', '<br>', '<br/>']
+    blank = ['<strong>', '</strong>', '<p>', '</p>', '<em>', '</em>']
+    info_content = replace_all(info_content, newline, '\n')
+    info_content = replace_all(info_content, blank, ' ')
 
-    return value
+    return info_content
 
 
 def title_process(str_title):
@@ -123,8 +74,6 @@ def company_process(str_company):
     end = str_company.find("</span>")
     return str_company[begin:end]
 
-
-def data_process(data):
     category = ""
     value = ""
     # xx= data.find( "<ul><li>")
@@ -221,10 +170,8 @@ def printToConsole(dictionary):
 
 def process(data):
     begin = data.find("href=\"")
-    print(begin)
-    end = data.rfind("data-tracking-control-name")
-    print(end)
-    return data[begin+len("href=\""):end]
+    end = data.rfind("click\">")
+    return data[begin+len("href=\""):end+len("click\">")]
 
 
 trade_spider()
