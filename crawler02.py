@@ -3,18 +3,20 @@ from bs4 import BeautifulSoup
 import json
 
 
-def trade_spider(max_page):
+def trade_spider():
     count_company = 0
     jobs_array = {}
     jobs = []
 
-    url = "https://www.linkedin.com/jobs/search/?geoId=104195383&keywords=data%%20analyst"
+    url = "https://www.linkedin.com/jobs/search/"
     source = requests.get(url)
     soup = BeautifulSoup(source.text, "html.parser")
-    for links in soup.findAll('a', {'class': 'job-card-list__title'}):
+    for links in soup.findAll('div', {'class': 'result-card__contents job-result-card__contents'}):
+        print(str(links))
         sub_url = process(str(links))
         print(sub_url)
-        jobs.append(get_item(sub_url))
+        print('---\n\n')
+        # jobs.append(get_item(sub_url))
         count_company += 1
 
     jobs_array["jobs"] = jobs
@@ -219,8 +221,10 @@ def printToConsole(dictionary):
 
 def process(data):
     begin = data.find("href=\"")
-    end = data.rfind("\">")
+    print(begin)
+    end = data.rfind("data-tracking-control-name")
+    print(end)
     return data[begin+len("href=\""):end]
 
 
-trade_spider(100)
+trade_spider()
