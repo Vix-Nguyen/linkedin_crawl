@@ -30,30 +30,64 @@ def get_item(item_url):
     # Get general description
     description = get_description(soup)
     title = get_title(soup)
-    # print(info_content)
+    location = get_location(soup)
+    company = get_company(soup)
+    posted_time = get_posted_time(soup)
+    num_applicant = get_numap(soup)
+    senority, emp_type, job_func, industries = get_criteria(soup)
+    # print(senority)
 
     job_item = {}
 
-    job_item["Description: "] = description
+    job_item['Description'] = description
+    job_item['Title'] = title
+    job_item['Company'] = company
+    job_item['Location'] = location
+    job_item['Posted time'] = posted_time
+    job_item['Number of applicants'] = num_applicant
+    job_item['Senority level'] = senority
+    job_item['Job function'] = job_func
+    job_item['Employee type'] = emp_type
+    job_item['Industries'] = industries
 
     return job_item
 
 
-def replace_all(text, dic, replace_char):
-    for i in dic:
-        text = text.replace(i, replace_char)
-    return text
-
-
 def get_title(soup):
-    info = soup.find('h1', {'class', 'topcard__title'})
-    info_content = str(info)
-    return info_content
+    title = soup.find('div', {'class', 'topcard__content-left'})
+    title_content = title_process(str(title))
+
+    print('\n', title_content)
+    return title_content
+
+
+def get_company(soup):
+    comp = soup.find('div', {'class', 'topcard__content-left'})
+    company = company_process(str(comp))
+    return company
+
+
+def get_location(soup):
+    loc = soup.find('div', {'class', 'topcard__content-left'})
+    location = location_process(str(loc))
+    return location
+
+
+def get_posted_time(soup):
+    ptime = soup.find('div', {'class', 'topcard__content-left'})
+    postime = postime_process(str(ptime))
+    return postime
+
+
+def get_numap(soup):
+    numap = soup.find('div', {'class', 'topcard__content-left'})
+    num_applicant = num_applicant_process(str(numap))
+    return num_applicant
 
 
 def get_description(soup):
     info = soup.find(
-        'div', {'class', 'show-more-less-html__markup'})  # Array info
+        'div', {'class', 'show-more-less-html__markup'})
     info_content = str(info)[84:]
     newline = ['<ul><li>', '<li>', '<br>', '<br/>']
     blank = ['<strong>', '</strong>', '<p>', '</p>', '<em>', '</em>']
@@ -63,85 +97,125 @@ def get_description(soup):
     return info_content
 
 
+def get_criteria(soup):
+    criteria = soup.findAll(
+        'span', {'class', 'job-criteria__text job-criteria__text--criteria'})
+
+    span_field = soup.findAll('h3', {'class', 'job-criteria__subheader'})
+    span_field = str(span_field)
+    span_field = span_field.replace(
+        '<h3 class="job-criteria__subheader">', '').replace('</h3>', '')
+
+    i = 0
+    str_crit = str(criteria)
+    senority = ''
+    emp_type = ''
+    job_func = ''
+    industries = ''
+
+    if 'Seniority level' in span_field:
+        senority = senority_process(str(criteria[i]))
+        i += 1
+
+    if 'Employment type' in span_field:
+        emp_type = emp_process(str(criteria[i]))
+        i += 1
+
+    if 'Job function' in span_field:
+        job_func = jfunc_process(str(criteria[i]))
+        i += 1
+
+    if 'Industries' in span_field:
+        industries = industries_process(str(criteria[i]))
+
+    return senority, emp_type, job_func, industries
+
+
 def title_process(str_title):
-    begin = str_title.find("<h1>") + 4
-    end = str_title.find("</h1>")
-    return str_title[begin:end]
+    begin = str_title.find('<h1')
+    end = str_title.find('</h1>')
+    temp1 = str_title[begin:end]
+
+    begin2 = temp1.find('>')
+    title = temp1[begin2+1:]
+    return title
 
 
-def company_process(str_company):
-    begin = str_company.find("</div>")+39
-    end = str_company.find("</span>")
-    return str_company[begin:end]
+def location_process(str_loc):
 
-    category = ""
-    value = ""
-    # xx= data.find( "<ul><li>")
-    yy = data.find("<!-- <pre>")
-    aa = data.find("<!-- <h3>Tỉnh / Thành:</h3> -->")
-    date = data.find("<!-- <h3>Ngày đăng:</h3> -->")
-    nganh = data.find("<h3>Ngành:</h3>")
-    if nganh != -1:  # ngành
-        begin = data.find("<h3>")+4
-        middle = data.find("</h3>")
-        end = data.find("</div>")
-        category = data[begin:middle]
-        value = data[middle+32:end]
-        x = data.find("\t\t\t\t")
-        if x != -1:
-            value = [data[middle+32:x]]
-            data = data[x+8:end]
-            while(data.find("\t\t\t\t") != -1):
-                temp = data.find("\t\t\t\t")
-                value.append("-" + data[0:temp])
-                data = data[temp + 4:]
-        return[category, value]
+    begin1 = find_nth_str(str_loc, '<span', 2)
+    end = find_nth_str(str_loc, '</span>', 2)
+    temp = str_loc[begin1:end]
 
-    if yy != -1:  # lương
-        begin = data.find("<h3>")+4
-        middle = data.find("</h3>")
-        end = yy
-        category = data[begin:middle]
-        value = data[middle+97:end-61]
-        return[category, value]
-    if aa != -1:  # nơi làm việc
-        begin = data.find("<h3>")+4
-        middle = data.find("</h3>")
-        end = data.find("</div>")
-        category = data[begin+len("Tỉnh / Thành:</h3> --><h3>") +
-                        1:middle+len("Tỉnh / Thành:</h3> --><h3>")+1]
-        value = data[middle+len("Tỉnh / Thành:</h3> --><h3>")+51:end-15]
-        return[category, value]
+    begin2 = temp.find('>')
+    loc = temp[begin2+1:end]
+    # print('loc:', loc)
+    return loc
 
-    # ?????
-    if date != -1:
-        return[category, value]
-    return[category, value]
+
+def company_process(str_comp):
+    begin1 = str_comp.find('<a')
+    end = str_comp.find('</a>')
+    temp1 = str_comp[begin1:end]
+
+    begin2 = temp1.find('>')
+    comp = temp1[begin2+1:end]
+    # print('comp:', comp)
+    return comp
+
+
+def postime_process(str_time):
+    begin1 = find_nth_str(str_time, '<span', 3)
+    end = find_nth_str(str_time, '</span>', 3)
+    temp = str_time[begin1:end]
+
+    begin2 = temp.find('>')
+    time = temp[begin2+1:end]
+    # print('time:', time)
+    return time
+
+
+def num_applicant_process(str_numap):
+    begin1 = str_numap.find('<figcaption')
+    end = str_numap.find('</figcaption>')
+    temp1 = str_numap[begin1:end]
+
+    begin2 = temp1.find('>')
+    numap = temp1[begin2+1:end]
+    # print('numap:', numap)
+    return numap
+
+
+def senority_process(str_sen):
+    begin = str_sen.find('>')
+    end = str_sen.find('</span>')
+
+    return str_sen[begin+1:end]
+
+
+def emp_process(str_emp):
+    begin = str_emp.find('>')
+    end = str_emp.find('</span>')
+
+    return str_emp[begin+1:end]
+
+
+def jfunc_process(str_jfunc):
+    begin = str_jfunc.find('>')
+    end = str_jfunc.find('</span>')
+
+    return str_jfunc[begin+1:end]
+
+
+def industries_process(str_indus):
+    begin = str_indus.find('>')
+    end = str_indus.find('</span>')
+
+    return str_indus[begin+1:end]
 
 
 def filter_data(dict):
-    job = {}
-    if "Tiêu đề" in dict:
-        job['job_title'] = dict["Tiêu đề"]
-    if "Tên công ty" in dict:
-        job['company'] = dict['Tên công ty']
-    if "Lương:" in dict:
-        job['salary'] = dict['Lương:']
-    if "Nơi làm việc:" in dict:
-        job['location'] = dict['Nơi làm việc:']
-    if "Ngành:" in dict:
-        job['position'] = dict['Ngành:']
-    # if "Ngành:" in dict:
-    #     job['Position'] = dict['Ngành:']
-    if "mô tả" in dict:
-        job['job_description'] = dict['mô tả']
-    if "yêu cầu" in dict:
-        job['job_requirement'] = dict['yêu cầu']
-    if "quyền lợi" in dict:
-        job['benefit'] = dict['quyền lợi']
-    if "số lượng" in dict:
-        job['quantity'] = dict["số lượng"]
-    return job
+    pass
 
 
 def writeJSONFile(dictionary):
@@ -172,6 +246,19 @@ def process(data):
     begin = data.find("href=\"")
     end = data.rfind("click\">")
     return data[begin+len("href=\""):end+len("click\">")]
+
+
+def replace_all(text, dic, replace_char):
+    for i in dic:
+        text = text.replace(i, replace_char)
+    return text
+
+
+def find_nth_str(string, substring, n):
+    if (n == 1):
+        return string.find(substring)
+    else:
+        return string.find(substring, find_nth_str(string, substring, n - 1) + 1)
 
 
 trade_spider()
